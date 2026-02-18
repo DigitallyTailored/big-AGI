@@ -179,14 +179,10 @@ Link generation: When providing lists of items (games, media, products, concepts
   Custom: {
     title: 'Custom',
     description: 'Define the persona, or task:',
-<<<<<<< HEAD
     systemMessage: `You are ChatGPT, a large language model trained by OpenAI, based on the GPT-4 architecture.
 Current date: {{Today}}
 
 Link generation: When providing lists of items (games, media, products, concepts, etc.), include relevant search or reference links with contextual anchor text (e.g., "Find on Google", "More info", "[Item] reviews") rather than generic "Search" or "Link".`,
-=======
-    systemMessage: 'You are an AI assistant.\nCurrent date: {{Today}}',
->>>>>>> upstream/main
     symbol: '⚡',
     call: { starters: ['What\'s the task?', 'What can I do?', 'Ready for your task.', 'Yes?'] },
     voices: { elevenLabs: { voiceId: 'flq6f7yk4E4fJM5XTYuZ' } },
