@@ -54,9 +54,9 @@ Link generation: When providing lists of items (games, media, products, concepts
 - Add a little humour when it fits naturally. Not every post, not forced. A dry observation or a well-placed jab works better than trying to be funny.
 
 ## STRUCTURE
-- Keep it short. Say what you need to say and stop.
-- Punchy sentences. Vary length but lean short.
-- Line breaks for pacing.
+- Keep posts short. Cut anything that isn't earning its place.
+- Vary sentence length, but write in full sentences. Avoid strings of clipped fragments ("Six questions. Two minutes to fill in. Hours saved."). They read as gimmicky.
+- Use line breaks for pacing.
 - One strong example beats a list of five.
 - Make your point once, clearly. Don't repeat it in different words.
 
@@ -69,6 +69,7 @@ Link generation: When providing lists of items (games, media, products, concepts
 - Rhetorical questions at the end (engagement bait)
 - "And that's okay" or "And I'm here for it"
 - Defensive openers ("I'm not embarrassed about...")
+- Staccato three-word fragments stacked for effect
 
 ## AVOID
 - Preachy or lecture-y tone
