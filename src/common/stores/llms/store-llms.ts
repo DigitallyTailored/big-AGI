@@ -13,12 +13,10 @@ import { findModelVendor, type ModelVendorId } from '~/modules/llms/vendors/vend
 import { hasKeys } from '~/common/util/objectUtils';
 
 import type { DModelDomainId } from './model.domains.types';
-import type { DModelParameterId, DModelParameterValues } from './llms.parameters';
 import type { DModelsService, DModelsServiceId } from './llms.service.types';
 import { DLLM, DLLMId, LLM_IF_OAI_Fn, LLM_IF_OAI_Vision } from './llms.types';
-import { DModelParameterRegistry, LLMS_ImplicitParamIds } from './llms.parameters';
-import { createDModelConfiguration, DModelConfiguration } from './modelconfiguration.types';
-import { createLlmsAssignmentsSlice, LlmsAssignmentsActions, LlmsAssignmentsSlice, LlmsAssignmentsState, llmsHeuristicUpdateAssignments } from './store-llms-domains_slice';
+import { DModelParameterId, DModelParameterRegistry, DModelParameterValues, LLMImplicitParametersRuntimeFallback } from './llms.parameters';
+import { createLlmsAssignmentsSlice, LlmsAssignmentsActions, LlmsAssignmentsSlice, LlmsAssignmentsState, llmsAssignmentsPruneStale } from './store-llms-domains_slice';
 import { getDomainModelConfiguration } from './hooks/useModelDomain';
 import { portModelPricingV2toV3 } from './llms.pricing';
 
@@ -83,11 +81,11 @@ export const useModelsStore = create<LlmsStore>()(persist(
     // actions
 
     setServiceLLMs: (serviceId: DModelsServiceId, updatedServiceLLMs: ReadonlyArray<DLLM>, keepUserEdits: true, keepMissingLLMs: false) =>
-      set(({ llms, modelAssignments }) => {
+      set(state => {
 
         // separate existing models
-        const otherServiceLLMs = llms.filter(llm => llm.sId !== serviceId);
-        const previousServiceLLMs = llms.filter(llm => llm.sId === serviceId);
+        const otherServiceLLMs = state.llms.filter(llm => llm.sId !== serviceId);
+        const previousServiceLLMs = state.llms.filter(llm => llm.sId === serviceId);
         const consumedPreviousIds = new Set<DLLMId>();
 
         // process updated models, re-applying user customizations where applicable
@@ -120,7 +118,7 @@ export const useModelsStore = create<LlmsStore>()(persist(
               const paramId = key as DModelParameterId;
 
               // keep implicit common parameters (always supported, not in parameterSpecs)
-              if (LLMS_ImplicitParamIds.includes(paramId))
+              if (paramId in LLMImplicitParametersRuntimeFallback)
                 continue;
 
               // remove parameters no longer in spec
@@ -130,12 +128,22 @@ export const useModelsStore = create<LlmsStore>()(persist(
                 continue;
               }
 
-              // for enum types, validate the value is still in the allowed values (e.g., 'medium' was removed from thinkingLevel)
+              // for enum types, validate the value is still in the allowed values
               const regDef = DModelParameterRegistry[paramId];
-              if (regDef && regDef.type === 'enum' && 'values' in regDef) {
+              if (regDef && regDef.type === 'enum' && 'values' in regDef && Array.isArray(regDef.values)) {
                 const currentValue = result.userParameters[paramId];
-                if (currentValue && typeof currentValue === 'string' && !(regDef.values as readonly string[]).includes(currentValue))
-                  delete result.userParameters[paramId]; // reset to default (undefined)
+                if (currentValue && typeof currentValue === 'string') {
+                  // reset to default - parameter definition does not contain this value anymore
+                  if (!(regDef.values as ReadonlyArray<string>).includes(currentValue)) {
+                    delete result.userParameters[paramId];
+                    console.log(`[DEV] Resetting '${paramId}' for '${llm.id}' because '${currentValue}' is no longer supported.`);
+                  }
+                  // reset to default - model parameter spec does not allow this value anymore
+                  else if (paramSpec.enumValues?.length && !(paramSpec.enumValues as readonly string[]).includes(currentValue)) {
+                    delete result.userParameters[paramId];
+                    console.log(`[DEV] Resetting '${paramId}' for '${llm.id}' because '${currentValue}' is no longer allowed for the model.`);
+                  }
+                }
               }
 
               // NOTE: no range validation for integer/float types yet. If added, be aware that
@@ -157,7 +165,7 @@ export const useModelsStore = create<LlmsStore>()(persist(
         const newLlms = [...customModels, ...missingModels, ...mergedServiceLLMs, ...otherServiceLLMs];
         return {
           llms: newLlms,
-          modelAssignments: llmsHeuristicUpdateAssignments(newLlms, modelAssignments),
+          modelAssignments: llmsAssignmentsPruneStale(newLlms, state.modelAssignments),
         };
       }),
 
@@ -166,7 +174,7 @@ export const useModelsStore = create<LlmsStore>()(persist(
         const newLlms = state.llms.filter(llm => llm.id !== id);
         return {
           llms: newLlms,
-          modelAssignments: llmsHeuristicUpdateAssignments(newLlms, state.modelAssignments),
+          modelAssignments: llmsAssignmentsPruneStale(newLlms, state.modelAssignments),
         };
       }),
 
@@ -175,7 +183,7 @@ export const useModelsStore = create<LlmsStore>()(persist(
         const newLlms = state.llms.filter(llm => !(llm.sId === serviceId && llm.isUserClone === true));
         return {
           llms: newLlms,
-          modelAssignments: llmsHeuristicUpdateAssignments(newLlms, state.modelAssignments),
+          modelAssignments: llmsAssignmentsPruneStale(newLlms, state.modelAssignments),
         };
       }),
 
@@ -257,8 +265,8 @@ export const useModelsStore = create<LlmsStore>()(persist(
     resetServiceUserParameters: (serviceId: DModelsServiceId) =>
       set(({ llms }) => ({
         llms: llms.map((llm: DLLM): DLLM => {
-          if (llm.sId !== serviceId) return llm;
-          // strip away user parameters and user label
+          if (llm.sId !== serviceId || llm.isUserClone) return llm;
+          // strip away user parameters and user label (skip user-cloned models)
           const {
             userParameters,
             userLabel, // service-wide reset includes resetting the name
@@ -358,7 +366,7 @@ export const useModelsStore = create<LlmsStore>()(persist(
         return {
           llms,
           sources: state.sources.filter(s => s.id !== id),
-          modelAssignments: llmsHeuristicUpdateAssignments(llms, state.modelAssignments),
+          modelAssignments: llmsAssignmentsPruneStale(llms, state.modelAssignments),
         };
       }),
 
@@ -416,8 +424,9 @@ export const useModelsStore = create<LlmsStore>()(persist(
      *  3: big-AGI v2.x upgrade
      *  4: migrate .options to .initialParameters/.userParameters
      *  4B: we changed from .chatLLMId/.fastLLMId to modelAssignments: {}, without explicit migration (done on rehydrate, and for no particular reason)
+     *  5: global model assignments default to dynamic Auto, stored as missing assignments
      */
-    version: 4,
+    version: 5,
     migrate: (_state: any, fromVersion: number): LlmsStore => {
 
       if (!_state) return _state;
@@ -456,6 +465,10 @@ export const useModelsStore = create<LlmsStore>()(persist(
         }
       }
 
+      // 4 -> 5: reset everyone to dynamic Auto
+      if (fromVersion < 5)
+        state.modelAssignments = {};
+
       return state;
     },
 
@@ -482,27 +495,10 @@ export const useModelsStore = create<LlmsStore>()(persist(
         return llm.vId ? llm : { ...llm, vId: service.vId };
       }).filter(llm => !!llm) as DLLM[];
 
-      // Select the best LLMs automatically, if not set
+      // Prune stale assignments. Missing assignments mean dynamic Auto.
       try {
-        //  auto-detect assignments, or re-import them from the old format
-        if (!hasKeys(state.modelAssignments)) {
-
-          // reimport the former chatLLMId and fastLLMId if set
-          const prevState = state as { chatLLMId?: DLLMId, fastLLMId?: DLLMId };
-          const existingAssignments: Partial<Record<DModelDomainId, DModelConfiguration>> = {};
-          if (prevState.chatLLMId) {
-            existingAssignments['primaryChat'] = createDModelConfiguration('primaryChat', prevState.chatLLMId, undefined);
-            existingAssignments['codeApply'] = createDModelConfiguration('codeApply', prevState.chatLLMId, undefined);
-            delete prevState.chatLLMId;
-          }
-          if (prevState.fastLLMId) {
-            existingAssignments['fastUtil'] = createDModelConfiguration('fastUtil', prevState.fastLLMId, undefined);
-            delete prevState.fastLLMId;
-          }
-
-          // auto-pick models
-          state.modelAssignments = llmsHeuristicUpdateAssignments(state.llms, existingAssignments);
-        }
+        if (hasKeys(state.modelAssignments))
+          state.modelAssignments = llmsAssignmentsPruneStale(state.llms, state.modelAssignments);
       } catch (error) {
         console.error('Error in autoPickModels', error);
       }

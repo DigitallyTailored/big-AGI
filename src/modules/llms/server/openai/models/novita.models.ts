@@ -1,8 +1,11 @@
-import { DModelInterfaceV1, LLM_IF_OAI_Chat, LLM_IF_OAI_Fn, LLM_IF_OAI_Json, LLM_IF_OAI_Reasoning, LLM_IF_OAI_Vision } from '~/common/stores/llms/llms.types';
+import { DModelInterfaceV1, LLM_IF_OAI_Chat, LLM_IF_OAI_Fn, LLM_IF_OAI_Json, LLM_IF_OAI_Reasoning, LLM_IF_OAI_Vision, LLM_IF_Outputs_Audio } from '~/common/stores/llms/llms.types';
 
 import type { ModelDescriptionSchema } from '../../llm.server.types';
 
-import { fromManualMapping, ManualMappings } from '../../models.mappings';
+import { fromManualMapping, llmsDefineManualMappings } from '../../models.mappings';
+
+// --- Novita Model ID inference (auto-derived from _novitaKnownModels) ---
+export type LlmsNovitaModelId = typeof _novitaKnownModels[number]['idPrefix'];
 import { wireNovitaListOutputSchema, WireNovitaModel } from '../wiretypes/novita.wiretypes';
 
 
@@ -11,9 +14,9 @@ export function novitaHeuristic(hostname: string) {
 }
 
 
-const _novitaKnownModels: ManualMappings = [
+const _novitaKnownModels = llmsDefineManualMappings([
   // NOTE: we don't need manual patching as we have enough info from API
-] as const;
+]);
 
 const _novitaDenyListContains: string[] = [
   // OCR models - not chat models
@@ -95,8 +98,13 @@ export function novitaModelsToModelDescriptions(wireModels: unknown): ModelDescr
       if (inputModalities.includes('image'))
         interfaces.push(LLM_IF_OAI_Vision);
 
-      // Pricing: API returns hundredths of a cent per million tokens, convert to dollars per 1K tokens
-      // e.g., 700 = $0.007 per 1M = $0.000007 per 1K
+      // Check output modalities for audio (e.g., Qwen3 Omni)
+      const outputModalities = model.output_modalities || [];
+      if (outputModalities.includes('audio'))
+        interfaces.push(LLM_IF_Outputs_Audio);
+
+      // Pricing: API returns hundredths of a cent per million tokens, convert to USD per 1M tokens
+      // (the internal pricing unit). e.g., 2700 -> $0.27/1M input for deepseek-v3-0324; 700 -> $0.07/1M.
       const chatPrice = (model.input_token_price_per_m !== undefined && model.output_token_price_per_m !== undefined)
         ? {
           input: model.input_token_price_per_m / 10000,

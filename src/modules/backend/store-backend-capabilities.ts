@@ -11,6 +11,7 @@ export interface BackendCapabilities {
   hasLlmAlibaba: boolean;
   hasLlmAnthropic: boolean;
   hasLlmAzureOpenAI: boolean;
+  hasLlmBedrock: boolean;
   hasLlmDeepseek: boolean;
   hasLlmGemini: boolean;
   hasLlmGroq: boolean;
@@ -20,7 +21,6 @@ export interface BackendCapabilities {
   hasLlmMoonshot: boolean;
   hasLlmOllama: boolean;
   hasLlmOpenAI: boolean;
-  hasLlmOpenPipe: boolean;
   hasLlmOpenRouter: boolean;
   hasLlmPerplexity: boolean;
   hasLlmTogetherAI: boolean;
@@ -51,6 +51,7 @@ const useBackendCapabilitiesStore = create<BackendStore>()(
     // initial values
     hasLlmAlibaba: false,
     hasLlmAnthropic: false,
+    hasLlmBedrock: false,
     hasLlmAzureOpenAI: false,
     hasLlmDeepseek: false,
     hasLlmGemini: false,
@@ -61,7 +62,6 @@ const useBackendCapabilitiesStore = create<BackendStore>()(
     hasLlmMoonshot: false,
     hasLlmOllama: false,
     hasLlmOpenAI: false,
-    hasLlmOpenPipe: false,
     hasLlmOpenRouter: false,
     hasLlmPerplexity: false,
     hasLlmTogetherAI: false,

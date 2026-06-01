@@ -45,6 +45,9 @@ interface UIPreferencesStore {
   showPersonaFinder: boolean;
   setShowPersonaFinder: (showPersonaFinder: boolean) => void;
 
+  showModelsFn: boolean; // =false, DEV only
+  setShowModelsFn: (showModelsFn: boolean) => void;
+
   showModelsHidden: boolean;
   setShowModelsHidden: (showModelsHidden: boolean) => void;
 
@@ -120,7 +123,10 @@ export const useUIPreferencesStore = create<UIPreferencesStore>()(
       showPersonaFinder: false,
       setShowPersonaFinder: (showPersonaFinder: boolean) => set({ showPersonaFinder }),
 
-      showModelsHidden: false,
+      showModelsFn: false,
+      setShowModelsFn: (showModelsFn: boolean) => set({ showModelsFn }),
+
+      showModelsHidden: true,
       setShowModelsHidden: (showModelsHidden: boolean) => set({ showModelsHidden }),
 
       showModelsStarredOnly: false,
@@ -250,8 +256,6 @@ type KnownKeys =
   | 'beam-wizard'                     // first Beam
   | 'call-wizard'                     // first Call
   | 'composer-shift-enter'            // not used Shift + Enter in the Composer yet
-  | 'composer-alt-enter'              // not used Alt + Enter in the Composer yet
-  | 'composer-ctrl-enter'             // not used Ctrl + Enter in the Composer yet
   | 'models-setup-first-visit'        // first visit to the Models Setup
   ;
 

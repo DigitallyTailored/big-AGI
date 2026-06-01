@@ -12,6 +12,7 @@ import { PhRobot } from '~/common/components/icons/phosphor/PhRobot';
 import { AlibabaCloudIcon } from '~/common/components/icons/vendors/AlibabaCloudIcon';
 import { AnthropicIcon } from '~/common/components/icons/vendors/AnthropicIcon';
 import { AzureIcon } from '~/common/components/icons/vendors/AzureIcon';
+import { BedrockIcon } from '~/common/components/icons/vendors/BedrockIcon';
 import { DeepseekIcon } from '~/common/components/icons/vendors/DeepseekIcon';
 import { GeminiIcon } from '~/common/components/icons/vendors/GeminiIcon';
 import { GroqIcon } from '~/common/components/icons/vendors/GroqIcon';
@@ -21,7 +22,6 @@ import { MistralIcon } from '~/common/components/icons/vendors/MistralIcon';
 import { MoonshotIcon } from '~/common/components/icons/vendors/MoonshotIcon';
 import { OllamaIcon } from '~/common/components/icons/vendors/OllamaIcon';
 import { OpenAIIcon } from '~/common/components/icons/vendors/OpenAIIcon';
-import { OpenPipeIcon } from '~/common/components/icons/vendors/OpenPipeIcon';
 import { OpenRouterIcon } from '~/common/components/icons/vendors/OpenRouterIcon';
 import { PerplexityIcon } from '~/common/components/icons/vendors/PerplexityIcon';
 import { TogetherIcon } from '~/common/components/icons/vendors/TogetherIcon';
@@ -38,6 +38,7 @@ const vendorIcons: Record<ModelVendorId, React.FunctionComponent<SvgIconProps>> 
   alibaba: AlibabaCloudIcon,
   anthropic: AnthropicIcon,
   azure: AzureIcon,
+  bedrock: BedrockIcon,
   deepseek: DeepseekIcon,
   googleai: GeminiIcon,
   groq: GroqIcon,
@@ -47,7 +48,6 @@ const vendorIcons: Record<ModelVendorId, React.FunctionComponent<SvgIconProps>> 
   moonshot: MoonshotIcon,
   ollama: OllamaIcon,
   openai: OpenAIIcon,
-  openpipe: OpenPipeIcon,
   openrouter: OpenRouterIcon,
   perplexity: PerplexityIcon,
   togetherai: TogetherIcon,
